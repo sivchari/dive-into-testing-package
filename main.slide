@@ -1,0 +1,302 @@
+Dive into testing package
+15 October 2022
+
+Takuma Shibuya
+Cyber Agent
+shibuuuu5@gmail.com
+GitHub [[https://github.com/sivchari][@sivchari]]
+Twitter [[https://twitter.com/sivchari][@sivchari]]
+
+*  自己紹介
+
+- 名前 渋谷拓真
+
+- 所属 Cyber Agent
+
+Like
+
+- golangci-lint
+- Container Runtime
+- Assembly
+- Compiler
+- Snowflake
+
+* 本日のテーマ
+
+- testing packageとは
+- go testの実行の仕組み
+- testing packageのコードを読んでみる(testing.T)
+- まとめ
+
+* モチベーション
+
+- 過去のGo Conでもソースコードを理解する内容ばかり喋ってきた(runtime, database/sql)
+- 普段何気なく書いているけどどう動いているのか知りたくなった
+- この発表を通じて個人的にもtestingを深く理解したいと思った
+
+* testing packageとは
+
+Goの標準パッケージの1つ
+
+名前の通りGoのテストを書くためのメソッドや構造体が提供されている
+
+Goのテストではtesting packageと標準コマンドの1つであるgo testを用いてテストを実行することができる
+
+- testing.T
+- testing.B
+- testing.F
+- ExampleTest
+
+* testing packageの特徴
+
+- assetが存在しない
+
+[[https://go.dev/doc/faq#assertions][Why does Go not have assertions ?]]
+
+assertは便利だがエラーレポートが適当になりがちになる。
+
+エラーレポートは何が起きたかを書くことが重要なためしっかりと自分で書くようにする。
+
+- テスト用のミニ言語がない
+
+覚えることを増やすことより丁寧に書き、今後のデバッグの際に役立つようにする
+
+* go testの実行の仕組み
+
+.play example/add.go
+
+* go testの実行の仕組み
+
+.code example/add_test.go
+
+- そもそもgo testってどう動いている？
+- PrefixがTestかどうかってどこで確認している？
+- なぜTestの引数は必ず*testing.Tである必要がある？
+
+* そもそもgo testってどう動いている？
+
+go testなどのコマンドはsrc/cmd/internalに存在する(e.g. run, fix, vet etc..)
+go testはsrc/cmd/internal/testに存在しておりtest.goが実行のスタートになっている
+
+定義されているコマンドは3つ
+
+- go testのCommand
+- go testで用いるflagのCommand
+- GoのTestの書き方の説明(ファイル名やTestから始める etc...)
+
+今回注目するのはgo testを実行するコマンドであるCmdTestで、実行内容はinitで定義されているrunTest
+
+* runTestの概要
+
+- cache resultの確認
+- go testと一緒に渡されたflagによる設定(coverage, fuzzing etc...)
+- fuzzingを実行できるバージョンやOS/Archかのチェック
+- packageをロードして実行するテストがあるかどうかの確認
+- go testを実行するための設定やactionのセットアップ
+
+* runTest
+
+.code example/testing/test.go /START OMIT/,/END OMIT/
+
+* builderTestとaction型
+
+builderTestは*action型のbuildTest, runTest, printTestを返す
+actionは単一のActionを表現するstructになっている
+go installやgo getもActionを使って実行される
+
+今回知っておくこと
+
+- Funcは実行内容が入る
+- DepsはActionの実行前に解決される依存関係を表現する
+
+* builderTest
+.code example/testing/buildertest.go
+
+* pmain, ptest, pxtest
+
+pmain, ptest, pxtestはパッケージ
+
+- pmain: test binaryに対応するmain package
+- ptest: 'package p'テストファイルを追加してコンパイルされたpackage p
+- pxtest: 'package p_test'テストファイルをコンパイルした結果
+
+package p_testがない場合はpxtestはnilになる
+package pのテストがない場合ptest == pになる(no test)
+testmainに構文エラーなどがあるとエラーが発生するがpackageのロードでエラーは発生しない。読み込みのエラーはError or DepsErrorに設定される
+
+* TestPackagesFor
+
+.code example/testing/testpackagesfor.go /START OMIT/,/END OMIT/
+
+* TestPackagesAndErrors
+
+.code example/testing/pmain.go /START OMIT/,/END OMIT/
+
+* TestPackagesAndErrors
+
+.code example/testing/ptest.go /START OMIT/,/END OMIT/
+
+* loadTestFuncs
+
+.code example/testing/loadtest.go /START OMIT/,/END OMIT/
+
+* load
+
+.code example/testing/load.go /START OMIT/,/END OMIT/
+
+- go/parser packageでFuncDeclをチェックする
+- 他にもTestMainやBenchmarkなどのチェックもある
+- isTestでPrefixがTest, Fuzzなどになっているかを確認する
+
+* checkTestFunc
+
+.code example/testing/check.go /START OMIT/,/END OMIT/
+
+* isTestFunc
+.code example/testing/istest.go /START OMIT/,/END OMIT/
+
+* formatTestmain
+
+.code example/testing/format.go
+
+- pmainのGoTestFilesで設定した_testmain.goの内容
+- text/templateでここまでに加工した_test.goの内容を吐き出す
+- ptestのTestmainGoにセットされる
+
+[[https://github.com/golang/go/blob/53773a5d0892be4489b4d5e91bbc8ae61000ada7/src/cmd/go/internal/load/test.go#L714][testmainTmpl]]
+
+* Exmaple
+
+.code example/add_test.go
+
+formatTestmainの結果をプリントするようにした独自バイナリで吐き出してみる
+吐き出す内容は上記の内容
+
+* 生成されたソースコード
+
+.code example/testing/generated.go /START OMIT/,/END OMIT/　
+
+* builderTest
+
+.code example/testing/write.go /START OMIT/,/END OMIT/
+
+吐き出したTestmainGoを_testmain.goに吐き出す
+
+* compile and link
+
+.code example/testing/compile.go /START OMIT/,/END OMIT/
+
+testDir + _testmain.goの内容をコンパイルしリンクする
+
+* buildTest, runTest, printTest
+
+.code example/testing/all.go /START OMIT/,/END OMIT/
+
+* (*Builder).Do
+
+.code example/testing/bdo.go /STEP1 OMIT/,/STEP1END OMIT/
+
+* (*Builder).Do
+
+.code example/testing/bdo.go /STEP2 OMIT/,/STEP2END OMIT/
+
+* (*Builder).Do
+
+.code example/testing/bdo.go /STEP3 OMIT/,/STEP3END OMIT/
+
+* (*Builder).Do
+
+- Actionの依存性を解決しながら実行される
+- Builderの内部にAction QueueとSemephoreがあり、依存性が0のActionから実行される
+- handleの内部でもhandleが実行終了するたびにpendingを減らし0になればQueueに入る
+- Actionがrootであれば全て実行したことになるため終了する
+
+* Action Graph (undocumented, unstable)
+
+実は2017の10月10日にはすでにRuss Coxにより実装されている(Go Con miniの5日前！)
+このオプションはあくまでもGoの開発を行う中でデバッグするために便利な機能であるため、あえてドキュメントにはしていない
+例えば(*Builder).Doは決められたPの中でどのような順番でActionが実行されるかはわからない(goroutineで実行しているため)
+
+.image images/scheduler-concepts.png 350 700
+
+* 実際に実行してみる
+
+go test -debug-actiongraph=graph.json add.go add_test.go
+
+実際にみるとここまでで読んだActionの依存性がDpesとIDで管理されている
+
+    {                   
+        "ID": 0,        
+        "Mode": "go test",     
+        "Package": "",     
+        "Deps": [       
+            1           
+        ],              
+        "Priority": 137,     
+    },                  
+    {                   
+        "ID": 1,        
+        "Mode": "test print",     
+        "Package": "command-line-arguments",     
+        "Deps": [       
+            2           
+        ],              
+        "Priority": 136,     
+    },
+
+* testing packageのコードを読んでみる(testing.T)
+
+.code example/testing/generated.go /START OMIT/,/END OMIT/
+
+* testing.MainStart
+
+.code example/testing/mainstart.go
+
+* testing packageのコードを読んでみる(testing.T)
+
+.code example/testing/generated.go /START OMIT/,/END OMIT/
+
+* m.Run
+
+.code example/testing/mrun.go /START OMIT/,/END OMIT/
+
+- parallelがマイナスじゃないかの確認
+- shuffleオプションの確認
+- 実際にFuzzing以外のテストを実行する
+- 今回みるのはrunTests
+
+* runTests
+
+.code example/testing/runtest1.go /START OMIT/,/END OMIT/
+
+- newTestContextは全てのテストで共通するフィールドを持っている
+
+* testing.T
+
+.code example/testing/t.go /START OMIT/,/END OMIT/
+
+contextの他にt.SetEnvを使っているかやt.Parallelを使っているかの判定フラグがある
+
+* testing.TB
+
+.code example/testing/tb.go /START OMIT/,/END OMIT/
+
+* testing.common
+
+.code example/testing/common.go /START OMIT/,/END OMIT/
+
+- TB interfaceはtesting.commonが実装している
+- testの成否や完了、終了、テストの名前なども保持している
+- commonの中でos.Stdoutを指定しているためGoのテストは標準出力で出力される
+
+* tRunner
+
+.code example/testing/trunner.go /START OMIT/,/END OMIT/
+
+内部では func以降の実行をしながらdeferでエラーのチェックをしている
+実際にはトップレベルもt.Runで実行している
+
+テストのレポートやt.Parallelの待機もここでおこなう
+
+.code example/testing/report.go /START OMIT/,/END OMIT/
+
