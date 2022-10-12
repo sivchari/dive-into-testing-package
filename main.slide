@@ -25,7 +25,7 @@ Like
 
 - testing packageとは
 - go testの実行の仕組み
-- testing packageのコードを読んでみる(testing.T)
+- testing packageのコードを読んでみる
 - まとめ
 
 * モチベーション
@@ -296,7 +296,35 @@ contextの他にt.SetEnvを使っているかやt.Parallelを使っているか�
 内部では func以降の実行をしながらdeferでエラーのチェックをしている
 実際にはトップレベルもt.Runで実行している
 
-テストのレポートやt.Parallelの待機もここでおこなう
+生成されたコードでいうTestAddがtest.NameでUnitTestがtest.F
+
+* tRunner
+
+.code example/testing/trunner.go /START2 OMIT/,/END2 OMIT/
+
+* tRunner
+
+サブテストが存在するかどうかを確認し、なければトップレベルテストがParallelかどうかを確認する
+もしサブテストがあればサブテストがParallelかどうかを確認する
+Parallelじゃなければ待機する
+
+* t.report
+
+テストのレポートやt.Parallelの待機をここでおこなう
 
 .code example/testing/report.go /START OMIT/,/END OMIT/
+
+* t.Run
+
+- 内部的にはt.Runの第1引数のNameに紐づくテスト(test.F)をgoroutineで実行する
+- 第2引数のfをgoroutineで読んでいるため先程の処理が再度走る
+- Parallelを内部でコールしているかを確認し再度tRunnerの処理になる
+- 最終的にはtRunnerに渡されたサブテストのfnがtRunnerで実行される
+
+* まとめ
+
+- go testは内部でgo command(buildやlink)を用いて自動生成したテスト用のファイルを実行している
+- testing packageはテストで使うことが普通だが処理される際はログなどを吐くシンプルなpackageとして処理される(Mini DSLがない)
+- Parallelをはじめとしたtestingの関数はTB interfaceの実装を処理しているだけでtestのための特別な関数ではない
+- 言い換えるとtest以外でも使えるものではある(ただしtesting.T.Logなどは出力はされない)
 
