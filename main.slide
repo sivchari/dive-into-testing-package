@@ -136,6 +136,10 @@ testmainに構文エラーなどがあるとエラーが発生するがpackage�
 
 .code example/testing/ptest.go /START OMIT/,/END OMIT/
 
+* TestPackagesAndErrors
+
+.code example/testing/testpackagesforerror.go /START OMIT/,/END OMIT/
+ 
 * loadTestFuncs
 
 .code example/testing/loadtest.go /START OMIT/,/END OMIT/
@@ -145,15 +149,24 @@ testmainに構文エラーなどがあるとエラーが発生するがpackage�
 .code example/testing/load.go /START OMIT/,/END OMIT/
 
 - go/parser packageでFuncDeclをチェックする
-- 他にもTestMainやBenchmarkなどのチェックもある
+- 他にもTestMainやBenchmarkなどのチェックもある(e.g. TestMainはname変数がTestMainならOK)
 - isTestでPrefixがTest, Fuzzなどになっているかを確認する
+
+* isTest
+
+.code example/testing/istest.go /START OMIT/,/END OMIT/
+
+* isTest
+
+.play example/istest/istest.go
 
 * checkTestFunc
 
 .code example/testing/check.go /START OMIT/,/END OMIT/
 
 * isTestFunc
-.code example/testing/istest.go /START OMIT/,/END OMIT/
+
+.code example/testing/istestfunc.go /START OMIT/,/END OMIT/
 
 * formatTestmain
 
