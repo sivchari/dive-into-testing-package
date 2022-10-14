@@ -120,21 +120,9 @@ pmain, ptest, pxtestはパッケージ
 - ptest: 'package p'テストファイルを追加してコンパイルされたpackage p
 - pxtest: 'package p_test'テストファイルをコンパイルした結果
 
-package p_testがない場合はpxtestはnilになる
-package pのテストがない場合ptest == pになる(no test)
-testmainに構文エラーなどがあるとエラーが発生するがpackageのロードでエラーは発生しない。読み込みのエラーはError or DepsErrorに設定される
-
 * TestPackagesFor
 
 .code example/testing/testpackagesfor.go /START OMIT/,/END OMIT/
-
-* TestPackagesAndErrors
-
-.code example/testing/pmain.go /START OMIT/,/END OMIT/
-
-* TestPackagesAndErrors
-
-.code example/testing/ptest.go /START OMIT/,/END OMIT/
 
 * TestPackagesAndErrors
 
@@ -200,22 +188,6 @@ formatTestmainの結果をプリントするようにした独自バイナリで
 .code example/testing/compile.go /START OMIT/,/END OMIT/
 
 testDir + _testmain.goの内容をコンパイルしリンクする
-
-* buildTest, runTest, printTest
-
-.code example/testing/all.go /START OMIT/,/END OMIT/
-
-* (*Builder).Do
-
-.code example/testing/bdo.go /STEP1 OMIT/,/STEP1END OMIT/
-
-* (*Builder).Do
-
-.code example/testing/bdo.go /STEP2 OMIT/,/STEP2END OMIT/
-
-* (*Builder).Do
-
-.code example/testing/bdo.go /STEP3 OMIT/,/STEP3END OMIT/
 
 * (*Builder).Do
 
@@ -326,13 +298,6 @@ Parallelじゃなければ待機する
 テストのレポートやt.Parallelの待機をここでおこなう
 
 .code example/testing/report.go /START OMIT/,/END OMIT/
-
-* t.Run
-
-- 内部的にはt.Runの第1引数のNameに紐づくテスト(test.F)をgoroutineで実行する
-- 第2引数のfをgoroutineで読んでいるため先程の処理が再度走る
-- Parallelを内部でコールしているかを確認し再度tRunnerの処理になる
-- 最終的にはtRunnerに渡されたサブテストのfnがtRunnerで実行される
 
 * まとめ
 
